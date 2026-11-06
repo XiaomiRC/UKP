@@ -20,6 +20,8 @@ def build(dataset,output):
         if not len(d.columns):continue
         tables.append(table)
         cols=b.col_types(path)
+        numeric={'Revenue','Cost','Margin','Costs','Quantity','Rate','SAC Amount','OneBill Amount','Difference','Impact GBP','FY26 YTD Revenue','FY26 YTD Cost','FY26 YTD Margin','FY25 Revenue','FY25 Margin'}
+        cols=[(c,'double' if c in numeric else ty) for c,ty in cols]
         rows=[]
         for values in d.itertuples(index=False,name=None):
             rows.append([None if v=='' else int(float(v)) if ty=='int64' else float(v) if ty=='double' else v for v,(_,ty) in zip(values,cols)])
@@ -29,7 +31,7 @@ def build(dataset,output):
         transforms=', '.join('{'+json.dumps(c)+', '+types[t]+'}' for c,t in cols)
         measure='Records '+table
         lines=[f'table {b.q(table)}',f'\tmeasure {b.q(measure)} = COUNTROWS({b.q(table)})','\t\tformatString: #,##0','']
-        if table=='fact_pnl' and 'Margin' in d:
+        if table=='fact_pnl' and 'Margin' in d and len(d):
             current=max(d['FY'])
             periods=sorted(set(d.loc[d['FY']==current,'Period']))
             members=', '.join(json.dumps(v) for v in periods)
