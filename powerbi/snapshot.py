@@ -44,7 +44,9 @@ def build(dataset,output):
         lines += [f'\tpartition {b.q(table)} = m','\t\tmode: import','\t\tsource =','\t\t\tlet',f'\t\t\t    Rows = Json.Document(Binary.FromText(Text.Combine({{{chunks}}}), BinaryEncoding.Base64)),',f'\t\t\t    Source = Table.FromRows(Rows, {{{', '.join(json.dumps(c) for c,_ in cols)}}}),',f'\t\t\t    Typed = Table.TransformColumnTypes(Source, {{{transforms}}})','\t\t\tin Typed']
         write(td+'/'+table+'.tmdl','\n'.join(lines))
         if table in labels and len(d):
-            fields=[('col',c) for c,_ in cols][:12]
+            priority=['SAC','Customer','Status','Severity','Reason','Product','Billing Account','SAC Amount','OneBill Amount','Difference','OR Circuit ID','Rate','Result','Check']
+            names=[c for c in priority if c in d]+[c for c,_ in cols if c not in priority]
+            fields=[('col',c) for c in names]
             visuals=[b.visual(table+'table','tableEx',240,300,1030,410,labels[table],table,{'Values':fields})]
             if 'SAC' in d:visuals.append(b.visual(table+'slicer','slicer',0,0,220,140,'SAC',table,{'Values':[('col','SAC')]}))
             category=next((c for c in ['Status','Severity','Result','Period','SAC'] if c in d),None)
