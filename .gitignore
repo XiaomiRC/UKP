@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.cache/
+inputs/
+outputs/
+dataset/
+browser/node_modules/
+browser/public/
+browser/dist/
+powerbi/publish_in_browser.js
+browser/test-results/
+browser/playwright-report/
+browser/site.zip
