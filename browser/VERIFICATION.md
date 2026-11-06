@@ -32,3 +32,5 @@ Seven Chromium tests passed locally (including cancellation retaining inventory)
 ## Dashboard and Power BI snapshots
 
 Seven existing local Chromium tests passed with added assertions for the dashboard view/filter and Power BI ZIP download. An additional simulated-export-failure test passed: results remain available and retry builds the project without rerunning investigation. Three Python regression tests and ten input tests passed. The full existing dataset generated a self-contained model with 17 TMDL files and 25 visuals; JSON definitions parsed. Embedded-data unit tests verify numeric values and leading-zero identifiers, and reject external file dependencies. Native Power BI Desktop opening, visual behaviour and compatibility remain unverified in this Linux environment.
+
+Final report definitions were validated against Microsoft’s published PBIR schemas: 36 JSON files passed. The inherited unavailable report/3.4.0 schema reference is replaced with published report/3.3.0 for snapshot exports. Native Power BI Desktop validation is still outstanding. All eight browser checks passed on the live dashboard release before this metadata correction.
