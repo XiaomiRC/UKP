@@ -22,7 +22,7 @@ Serve `browser/dist/` with any static HTTPS host. For local development, prepare
 
 The manual `.github/workflows/pages.yml` builds and deploys **only browser/dist**. Set repository Settings → Pages → Source to GitHub Actions, then run the Build browser application workflow. The relative base path supports both account and project Pages URLs.
 
-Do not publish the repository's input files or reports. The root `.gitignore` excludes data and generated assets; check already-tracked files independently before making any repository public. No GitHub deployment has been performed by this change.
+Do not publish the repository's input files or reports. The root `.gitignore` excludes data and generated assets; check already-tracked files independently before making any repository public. The deployed site is https://xiaomirc.github.io/UKP/.
 
 ## Privacy
 
@@ -48,4 +48,4 @@ Inputs and outputs exist in Web Worker memory only. Clear session / Cancel termi
 
 - `node browser/scripts/test-worker.mjs` exercises the actual worker message/download pipeline against TEST01, adapting only the runtime path for Node and forbidding network requests. It writes test downloads under `/tmp/ukp-worker-downloads`.
 - `npm --prefix browser run test:browser` runs Playwright against the production preview after a build. Install the Playwright browser on the developer/test machine first, or set `UKP_CHROMIUM` to an installed Chromium executable.
-- Browser visual/device checks could not run in the current sandbox: Chromium's crashpad socket and local-server binding were denied. WebAssembly and worker tests are separate evidence; they do not establish device/browser performance.
+- Chromium browser tests now pass against both the local production preview and https://xiaomirc.github.io/UKP/. See VERIFICATION.md. The desktop browser-extension integration remains separate from the isolated test browser.
