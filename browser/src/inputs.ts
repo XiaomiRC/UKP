@@ -36,7 +36,7 @@ export async function importFiles(files:File[],existing:InputFile[],signal?:Abor
   const f=bytes instanceof File?bytes:new File([bytes as BlobPart],path.split('/').pop());
   if(f.size>SINGLE)throw Error('Maximum individual file size is 500 MB.');
   const item=classify(f,path);if(!item){ignored++;excluded.push({path,size:f.size,reason:nameReason(path),file:/\.(csv|xlsx|xlsb)$/i.test(path)?f:undefined});return;}
-  if(result.some(r=>r.path===path)){excluded.push({path,size:f.size,reason:'Duplicate path; original retained'});return;}
+  if(result.some(r=>r.path===path)){excluded.push({path,size:f.size,file:f,reason:'Duplicate path; original retained'});return;}
   result.push(item);
  }
  for(const f of files){
