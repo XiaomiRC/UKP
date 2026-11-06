@@ -24,3 +24,7 @@
 Browser rendering/device performance and Playwright UI/network-storage tests could not run in this sandbox. Local-server binding was denied (EPERM), and Chromium launch failed on a crashpad socket restriction. The Playwright suite is included for execution in a normal test environment. The site has since been deployed successfully to GitHub Pages.
 
 The application currently supports FY2026 inputs; other fiscal years are blocked to prevent misleading year labels. Online Power BI publishing remains manual and requires sending data to Microsoft.
+
+## Single-file inspection and complete inventory
+
+Six Chromium tests passed locally: standalone CSV preview, standalone Excel preview with sheet selection, seven-file ZIP accounting, seven-file folder accounting, reconciliation/downloads with no upload requests, and inventory exclusion. Excluded files retain their names/reasons. Duplicate paths retain the original and add an excluded record. Runtime file usage is reported separately from filename eligibility and written to dataset/file_status.csv in result downloads. A separate Cancel activity button retains selected files while Clear session removes them.
