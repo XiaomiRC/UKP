@@ -10,6 +10,8 @@ test('real reconciliation produces local downloads without upload requests',asyn
  await page.getByLabel('Activity').selectOption('recon');await page.getByRole('button',{name:'Select all',exact:true}).click();
  await page.getByRole('button',{name:/Run 1 selected SAC/}).click();
  await expect(page.getByRole('link',{name:'Download all reports + CSV dataset'})).toBeVisible({timeout:150000});
+ await expect(page.getByRole('heading',{name:'Interactive dashboard'})).toBeVisible();await page.getByLabel('Dashboard view',{exact:true}).selectOption('fact_recon_account');await expect(page.getByRole('button',{name:/^In Both:/})).toBeVisible();
+ const powerDownload=page.waitForEvent('download');await page.getByRole('link',{name:'UKP-PowerBI.zip',exact:true}).click();const power=unzipSync(fs.readFileSync((await (await powerDownload).path())!));expect(Object.keys(power)).toContain('powerbi/UKP.pbip');const model=new TextDecoder().decode(power['powerbi/UKP.SemanticModel/definition/tables/dim_sac.tmdl']);expect(model).toContain('Binary.FromText');expect(model).not.toContain('File.Contents');
  const download=page.waitForEvent('download');await page.getByRole('link',{name:'Download all reports + CSV dataset'}).click();
  const downloaded=await download;expect(downloaded.suggestedFilename()).toBe('UKP-results.zip');
  const contents=unzipSync(fs.readFileSync((await downloaded.path())!));const manifest=new TextDecoder().decode(contents['dataset/file_status.csv']);expect(manifest).toContain('Used');expect(manifest).toContain('Skipped');
