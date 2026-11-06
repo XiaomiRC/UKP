@@ -20,6 +20,6 @@ test('real reconciliation produces local downloads without upload requests',asyn
 });
 test('ZIP inputs appear in inventory and can be removed',async({page})=>{
  await page.goto('./');await page.locator('input[type=file]').nth(2).setInputFiles({name:'inputs.zip',mimeType:'application/zip',buffer:Buffer.from(zipSync({'sac_reports/X1234_EXAMPLE.xlsx':new Uint8Array([1]),'bills/VP12345678.csv':new Uint8Array([1])}))});
- await expect(page.getByRole('status')).toContainText('2 supported files');await page.getByText('2 supported files · review inventory').click();await expect(page.getByRole('cell',{name:'sac_reports/X1234_EXAMPLE.xlsx',exact:true})).toBeVisible();
+ await expect(page.getByRole('status')).toContainText('2 files received');await page.getByText('2 supported files · review inventory').click();await expect(page.getByRole('cell',{name:'sac_reports/X1234_EXAMPLE.xlsx',exact:true}).first()).toBeVisible();
  await page.getByRole('button',{name:'Remove sac_reports/X1234_EXAMPLE.xlsx',exact:true}).click();await expect(page.getByText('1 supported files · review inventory')).toBeVisible();
 });

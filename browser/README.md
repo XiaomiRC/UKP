@@ -49,3 +49,9 @@ Inputs and outputs exist in Web Worker memory only. Clear session / Cancel termi
 - `node browser/scripts/test-worker.mjs` exercises the actual worker message/download pipeline against TEST01, adapting only the runtime path for Node and forbidding network requests. It writes test downloads under `/tmp/ukp-worker-downloads`.
 - `npm --prefix browser run test:browser` runs Playwright against the production preview after a build. Install the Playwright browser on the developer/test machine first, or set `UKP_CHROMIUM` to an installed Chromium executable.
 - Chromium browser tests now pass against both the local production preview and https://xiaomirc.github.io/UKP/. See VERIFICATION.md. The desktop browser-extension integration remains separate from the isolated test browser.
+
+## File inspection and accounting
+
+Use Inspect file to preview a standalone CSV/XLSX/XLSB without companion files. The preview is limited to 50 rows, lists workbook sheets, and supports switching sheets. It checks input structure; it is not a completed reconciliation.
+
+The complete inventory retains received filenames and exclusion reasons, including unsupported files, duplicate paths and user exclusions. The investigation reports files actually read, skipped inputs and read failures. The downloaded dataset/file_status.csv includes the full submitted inventory. Files the browser never exposes cannot be counted.

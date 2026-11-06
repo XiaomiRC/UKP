@@ -20,6 +20,24 @@ os.environ['UKP_CACHE']='/work/cache'
 os.environ['UKP_REPORTING_DATE']=browser_date
 sys.path.insert(0, '/app')
 import run
+used=set()
+from js import postMessage as send, Object
+from pyodide.ffi import to_js
+def status(path,state): send(to_js({'fileStatus':{'file':os.path.basename(str(path)),'status':state}},dict_converter=Object.fromEntries))
+def track(function):
+ def wrapped(path,*args,**kwargs):
+  status(path,'Processing')
+  try:
+   result=function(path,*args,**kwargs)
+   used.add(str(path));status(path,'Used')
+   return result
+  except Exception:
+   status(path,'Failed to read or validate');raise
+ return wrapped
+run.load_bill=track(run.load_bill)
+run.load_sac_report=track(run.load_sac_report)
+import ukp.loaders as loaders
+loaders.read_xlsb=track(loaders.read_xlsb)
 args=['--sac',*browser_sacs.split(),'--sac-reports','/work/sac','--bills','/work/bills','--period','/work/period','--out','/work/outputs','--dataset','/work/dataset']
 if browser_mode!='both': args.append('--'+browser_mode+'-only')
 results=run.main(args)
@@ -32,12 +50,23 @@ for result in results:
  if d is not None:
   checks.extend(d.checks)
   findings.extend(d.findings.fillna('').to_dict('records'))
-json.dumps({'checks':checks,'findings':findings,'accounts':accounts}, default=str)
+usage=[]
+for category in ['sac','bills','period']:
+ for name in os.listdir('/work/'+category):
+  path='/work/'+category+'/'+name
+  usage.append({'file':name,'status':'Used' if path in used else 'Skipped','reason':'Read by investigation' if path in used else 'Not referenced by selected investigation'})
+import csv
+with open('/work/dataset/file_status.csv','w') as f:
+ writer=csv.DictWriter(f,fieldnames=['file','status','reason']);writer.writeheader();writer.writerows(usage)
+json.dumps({'checks':checks,'findings':findings,'accounts':accounts,'usage':usage}, default=str)
 `);
   const files=[];const archive={};
   function collect(path,prefix){for(const name of py.FS.readdir(path)){if(name==='.'||name==='..')continue;const full=path+'/'+name;if(py.FS.isDir(py.FS.stat(full).mode))collect(full,prefix+name+'/');else{const bytes=py.FS.readFile(full);archive[prefix+name]=bytes; if(name.endsWith('.xlsx'))files.push({name:prefix+name,bytes});}}}
   collect('/work/outputs','reports/');collect('/work/dataset','dataset/');
+  const result=JSON.parse(summary);
+  const audit=(data.audit||[]).map(f=>{const used=result.usage.find(u=>u.file===f.name);return {file:f.file,status:f.included?(used?.status||'Not completed'):f.status,reason:f.included?(used?.reason||'Investigation did not finish'):f.reason};});
+  if(audit.length){const quote=v=>'"'+String(v??'').replaceAll('"','""')+'"';archive['dataset/file_status.csv']=new TextEncoder().encode(['file,status,reason',...audit.map(f=>[f.file,f.status,f.reason].map(quote).join(','))].join('\n'));}
   files.unshift({name:'UKP-results.zip',bytes:zipSync(archive)});
-  postMessage({files,summary:JSON.parse(summary)},files.map(f=>f.bytes.buffer));
+  postMessage({files,summary:result},files.map(f=>f.bytes.buffer));
  }catch(e){postMessage({error:e.message||String(e)});}
 };
