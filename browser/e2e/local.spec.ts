@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-import fs from 'node:fs';import path from 'node:path';import {zipSync} from 'fflate';
+import fs from 'node:fs';import path from 'node:path';import {zipSync,unzipSync} from 'fflate';
 const root=path.resolve(import.meta.dirname,'../..');
 test('real reconciliation produces local downloads without upload requests',async({page})=>{
  const network:any[]=[];page.on('request',r=>network.push({url:r.url(),method:r.method()}));
@@ -11,7 +11,8 @@ test('real reconciliation produces local downloads without upload requests',asyn
  await page.getByRole('button',{name:/Run 1 selected SAC/}).click();
  await expect(page.getByRole('link',{name:'Download all reports + CSV dataset'})).toBeVisible({timeout:150000});
  const download=page.waitForEvent('download');await page.getByRole('link',{name:'Download all reports + CSV dataset'}).click();
- expect((await download).suggestedFilename()).toBe('UKP-results.zip');
+ const downloaded=await download;expect(downloaded.suggestedFilename()).toBe('UKP-results.zip');
+ const contents=unzipSync(fs.readFileSync((await downloaded.path())!));const manifest=new TextDecoder().decode(contents['dataset/file_status.csv']);expect(manifest).toContain('Used');expect(manifest).toContain('Skipped');
  expect(network.filter(r=>r.method!=='GET')).toEqual([]);
  expect(network.filter(r=>!r.url.startsWith(new URL(page.url()).origin+'/'))).toEqual([]);
  expect(await page.evaluate(()=>({local:localStorage.length,session:sessionStorage.length}))).toEqual({local:0,session:0});
