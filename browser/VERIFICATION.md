@@ -10,8 +10,17 @@
 - Checked the static artifact allowlist: 17 files, with no investigation XLSX/XLSB/CSV/parquet files. The engine ZIP contains only application source, rule configuration and the three explicitly bundled pure-Python dependencies.
 - Cold parsing of P06 in WebAssembly took about seven minutes for the first SAC in this environment. Later SACs used memory-only cached sheets and took approximately 16–63 seconds each. These are Node/WASM timings, not browser-device measurements.
 
-## Not verified
+## Browser verification after execution permissions were updated
 
-Browser rendering/device performance and Playwright UI/network-storage tests could not run in this sandbox. Local-server binding was denied (EPERM), and Chromium launch failed on a crashpad socket restriction. The Playwright suite is included for execution in a normal test environment. No live GitHub Pages site was published.
+- Chromium/Playwright: both tests passed against the local production preview (12.2 seconds) and live GitHub Pages (14.6 seconds).
+- Actual SAC XLSX plus OneBill CSV files produced results and triggered the ZIP download.
+- Confirmed no non-GET requests, no requests to other origins, and zero localStorage/sessionStorage entries during the CSV workflow.
+- Confirmed ZIP inventory and removal, plus clearing the session removes result links.
+- Screenshots were reviewed locally and contain private test results; they are not committed.
+- Local preview: http://127.0.0.1:4173/. Live site: https://xiaomirc.github.io/UKP/.
+
+## Earlier environment limitation (resolved for isolated test browser)
+
+Browser rendering/device performance and Playwright UI/network-storage tests could not run in this sandbox. Local-server binding was denied (EPERM), and Chromium launch failed on a crashpad socket restriction. The Playwright suite is included for execution in a normal test environment. The site has since been deployed successfully to GitHub Pages.
 
 The application currently supports FY2026 inputs; other fiscal years are blocked to prevent misleading year labels. Online Power BI publishing remains manual and requires sending data to Microsoft.
