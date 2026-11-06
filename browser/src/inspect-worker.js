@@ -1,7 +1,7 @@
 self.onmessage=async({data})=>{try{
  const {loadPyodide}=await import(/* @vite-ignore */new URL('runtime/pyodide.mjs',data.base).href);
  const py=await loadPyodide({indexURL:new URL('runtime/',data.base).href});await py.loadPackage(['pandas']);
- const engine=await fetch(new URL('engine.zip',data.base));py.unpackArchive(new Uint8Array(await engine.arrayBuffer()),'zip',{extractDir:'/app'});
+ const engine=await fetch(new URL('engine.zip',data.base),{cache:'no-cache'});py.unpackArchive(new Uint8Array(await engine.arrayBuffer()),'zip',{extractDir:'/app'});
  py.FS.writeFile('/input',new Uint8Array(data.bytes));py.globals.set('input_name',data.name);py.globals.set('requested_sheet',data.sheet||'');
  const preview=await py.runPythonAsync(`
 import sys,json

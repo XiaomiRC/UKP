@@ -6,7 +6,7 @@ self.onmessage=async({data})=>{
   const {loadPyodide}=await import(/* @vite-ignore */new URL('runtime/pyodide.mjs',base).href);
   const py=await loadPyodide({indexURL:new URL('runtime/',base).href,stdout:s=>postMessage({log:s}),stderr:s=>postMessage({log:s})});
   await py.loadPackage(['pandas','pyyaml']);
-  const engine=await fetch(new URL('engine.zip',base));if(!engine.ok)throw Error('Analysis engine is unavailable. Rebuild application assets.');
+  const engine=await fetch(new URL('engine.zip',base),{cache:'no-cache'});if(!engine.ok)throw Error('Analysis engine is unavailable. Rebuild application assets.');
   py.unpackArchive(new Uint8Array(await engine.arrayBuffer()),'zip',{extractDir:'/app'});
   for(const dir of ['sac','bills','period','outputs','dataset'])py.FS.mkdirTree('/work/'+dir);
   for(const file of data.files){const name=file.name;if(name.includes('/')||name.includes('\\'))throw Error('Invalid input filename');py.FS.writeFile('/work/'+file.category+'/'+name,new Uint8Array(file.bytes));}

@@ -1,5 +1,5 @@
 import {zipSync} from 'fflate';
-self.onmessage=async({data})=>{try{const {loadPyodide}=await import(/* @vite-ignore */new URL('runtime/pyodide.mjs',data.base).href);const py=await loadPyodide({indexURL:new URL('runtime/',data.base).href});await py.loadPackage(['pandas']);const response=await fetch(new URL('engine.zip',data.base));if(!response.ok)throw Error('Engine unavailable');py.unpackArchive(new Uint8Array(await response.arrayBuffer()),'zip',{extractDir:'/app'});py.globals.set('snapshot',JSON.stringify(data.summary));await py.runPythonAsync(`
+self.onmessage=async({data})=>{try{const {loadPyodide}=await import(/* @vite-ignore */new URL('runtime/pyodide.mjs',data.base).href);const py=await loadPyodide({indexURL:new URL('runtime/',data.base).href});await py.loadPackage(['pandas']);const response=await fetch(new URL('engine.zip',data.base),{cache:'no-cache'});if(!response.ok)throw Error('Engine unavailable');py.unpackArchive(new Uint8Array(await response.arrayBuffer()),'zip',{extractDir:'/app'});py.globals.set('snapshot',JSON.stringify(data.summary));await py.runPythonAsync(`
 import sys,os,json,pandas as pd
 sys.path.insert(0,'/app');os.makedirs('/dataset',exist_ok=True)
 s=json.loads(snapshot)
