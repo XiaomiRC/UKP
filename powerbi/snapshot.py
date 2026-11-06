@@ -73,6 +73,11 @@ def build(dataset,output):
         if 'SAC' in pd.read_csv(dataset+'/'+table+'.csv',nrows=0).columns:
             relationships += ['relationship '+b.tag('snapshot',table),f'\tfromColumn: {b.q(table)}.SAC','\ttoColumn: dim_sac.SAC','']
     write(sm+'/definition/relationships.tmdl','\n'.join(relationships))
-    for path,text in report_parts(sections,model_folder='../UKP.SemanticModel').items():write(rp+'/'+path,text)
+    for path,text in report_parts(sections,model_folder='../UKP.SemanticModel').items():
+        if path=='definition/report.json':
+            definition=json.loads(text)
+            definition['$schema']='https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.3.0/schema.json'
+            text=json.dumps(definition,indent=2)
+        write(rp+'/'+path,text)
     write(output+'/UKP.pbip',json.dumps({'version':'1.0','artifacts':[{'report':{'path':'UKP.Report'}}],'settings':{'enableAutoRecovery':True}}))
     write(output+'/README.txt','Open UKP.pbip in Power BI Desktop. This is a self-contained data snapshot. Refresh loads the embedded snapshot, not new source files. Rerun the website for updated results. Desktop compatibility still requires native validation.')
