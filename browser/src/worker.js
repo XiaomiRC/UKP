@@ -10,7 +10,7 @@ self.onmessage=async({data})=>{
   py.unpackArchive(new Uint8Array(await engine.arrayBuffer()),'zip',{extractDir:'/app'});
   for(const dir of ['sac','bills','period','outputs','dataset'])py.FS.mkdirTree('/work/'+dir);
   for(const file of data.files){const name=file.name;if(name.includes('/')||name.includes('\\'))throw Error('Invalid input filename');py.FS.writeFile('/work/'+file.category+'/'+name,new Uint8Array(file.bytes));}
-  py.globals.set('browser_mode',data.mode);py.globals.set('browser_sacs',data.sacs.join(' '));py.globals.set('browser_date',data.date);
+  py.globals.set('browser_mode',data.mode);py.globals.set('browser_sacs',data.sacs.join(' '));py.globals.set('browser_date',data.date);py.globals.set('browser_audit',JSON.stringify(data.audit||[]));
   postMessage({status:'Running investigation locally. Large period workbooks can take several minutes.'});
   const summary=await py.runPythonAsync(`
 import os, sys, json, warnings
@@ -50,22 +50,50 @@ for result in results:
  if d is not None:
   checks.extend(d.checks)
   findings.extend(d.findings.fillna('').to_dict('records'))
+for result in results:
+ if result['dd'] is not None:
+  d=result['dd']
+  from ukp.export import _upsert
+  _upsert('/work/dataset/fact_voice.csv',d.voice,d.sac)
 usage=[]
 for category in ['sac','bills','period']:
  for name in os.listdir('/work/'+category):
   path='/work/'+category+'/'+name
   usage.append({'file':name,'status':'Used' if path in used else 'Skipped','reason':'Read by investigation' if path in used else 'Not referenced by selected investigation'})
 import csv
+audit=json.loads(browser_audit)
+manifest=[]
+for entry in audit:
+ record=next((u for u in usage if u['file']==entry.get('name')),None)
+ manifest.append({'file':entry['file'],'status':record['status'] if entry.get('included') and record else entry.get('status','Skipped'),'reason':record['reason'] if entry.get('included') and record else entry.get('reason','Not required')})
 with open('/work/dataset/file_status.csv','w') as f:
- writer=csv.DictWriter(f,fieldnames=['file','status','reason']);writer.writeheader();writer.writerows(usage)
-json.dumps({'checks':checks,'findings':findings,'accounts':accounts,'usage':usage}, default=str)
+ writer=csv.DictWriter(f,fieldnames=['file','status','reason']);writer.writeheader();writer.writerows(manifest or usage)
+send(to_js({'status':'Preparing interactive dashboard…'},dict_converter=Object.fromEntries))
+dashboard={}
+schemas={}
+import pandas as pd
+for name in os.listdir('/work/dataset'):
+ if name.endswith('.csv'):
+  frame=pd.read_csv('/work/dataset/'+name,dtype=str,keep_default_na=False)
+  dashboard[name[:-4]]=frame.to_dict('records')
+  schemas[name[:-4]]=list(frame.columns)
+export_error=''
+try:
+ send(to_js({'status':'Building self-contained Power BI project…'},dict_converter=Object.fromEntries))
+ from powerbi.snapshot import build
+ build('/work/dataset','/work/powerbi')
+except Exception as ex: export_error=str(ex)
+json.dumps({'dashboard_schema':schemas,'dashboard':dashboard,'export_error':export_error,'checks':checks,'findings':findings,'accounts':accounts,'usage':usage}, default=str)
 `);
   const files=[];const archive={};
   function collect(path,prefix){for(const name of py.FS.readdir(path)){if(name==='.'||name==='..')continue;const full=path+'/'+name;if(py.FS.isDir(py.FS.stat(full).mode))collect(full,prefix+name+'/');else{const bytes=py.FS.readFile(full);archive[prefix+name]=bytes; if(name.endsWith('.xlsx'))files.push({name:prefix+name,bytes});}}}
+  if(!JSON.parse(summary).export_error&&py.FS.analyzePath('/work/powerbi').exists)collect('/work/powerbi','powerbi/');
   collect('/work/outputs','reports/');collect('/work/dataset','dataset/');
   const result=JSON.parse(summary);
   const audit=(data.audit||[]).map(f=>{const used=result.usage.find(u=>u.file===f.name);return {file:f.file,status:f.included?(used?.status||'Not completed'):f.status,reason:f.included?(used?.reason||'Investigation did not finish'):f.reason};});
   if(audit.length){const quote=v=>'"'+String(v??'').replaceAll('"','""')+'"';archive['dataset/file_status.csv']=new TextEncoder().encode(['file,status,reason',...audit.map(f=>[f.file,f.status,f.reason].map(quote).join(','))].join('\n'));}
+  const project=Object.fromEntries(Object.entries(archive).filter(([name])=>name.startsWith('powerbi/')));
+  if(Object.keys(project).length)files.push({name:'UKP-PowerBI.zip',bytes:zipSync(project)});
   files.unshift({name:'UKP-results.zip',bytes:zipSync(archive)});
   postMessage({files,summary:result},files.map(f=>f.bytes.buffer));
  }catch(e){postMessage({error:e.message||String(e)});}

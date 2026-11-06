@@ -28,3 +28,7 @@ The application currently supports FY2026 inputs; other fiscal years are blocked
 ## Single-file inspection and complete inventory
 
 Seven Chromium tests passed locally (including cancellation retaining inventory): standalone CSV preview, standalone Excel preview with sheet selection, seven-file ZIP accounting, seven-file folder accounting, reconciliation/downloads with no upload requests, inventory exclusion, and inspection cancellation. The download test also checks that file_status.csv contains Used and Skipped records. Excluded files retain their names/reasons. Duplicate paths retain the original and add an excluded record. Runtime file usage is reported separately from filename eligibility and written to dataset/file_status.csv in result downloads. A separate Cancel activity button retains selected files while Clear session removes them.
+
+## Dashboard and Power BI snapshots
+
+Seven existing local Chromium tests passed with added assertions for the dashboard view/filter and Power BI ZIP download. An additional simulated-export-failure test passed: results remain available and retry builds the project without rerunning investigation. Three Python regression tests and ten input tests passed. The full existing dataset generated a self-contained model with 17 TMDL files and 25 visuals; JSON definitions parsed. Embedded-data unit tests verify numeric values and leading-zero identifiers, and reject external file dependencies. Native Power BI Desktop opening, visual behaviour and compatibility remain unverified in this Linux environment.

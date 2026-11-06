@@ -55,3 +55,11 @@ Inputs and outputs exist in Web Worker memory only. Clear session / Cancel termi
 Use Inspect file to preview a standalone CSV/XLSX/XLSB without companion files. The preview is limited to 50 rows, lists workbook sheets, and supports switching sheets. It checks input structure; it is not a completed reconciliation.
 
 The complete inventory retains received filenames and exclusion reasons, including unsupported files, duplicate paths and user exclusions. The investigation reports files actually read, skipped inputs and read failures. The downloaded dataset/file_status.csv includes the full submitted inventory. Files the browser never exposes cannot be counted.
+
+## Interactive dashboard and Power BI snapshot
+
+Completed investigations now prepare an interactive dashboard and a self-contained Power BI project from the same dataset. Use Dashboard view, SAC, available product/period/severity filters, chart selections, column sorting and record details. Financial charts default to comparable periods.
+
+Download UKP-PowerBI.zip, extract it, and open powerbi/UKP.pbip in Power BI Desktop. The results ZIP also includes this project. The Power Query tables embed this run's data; refreshing does not fetch new source files. Rerun the website for updated results. No folder parameter or server is required. Power BI Desktop opening/rendering is not verified in this Linux environment.
+
+If project generation fails, the dashboard and investigation downloads remain available. Retry Power BI export regenerates the project from the existing snapshot without repeating the investigation. Downloads contain business data and should be handled accordingly.
