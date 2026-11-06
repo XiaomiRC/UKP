@@ -1,0 +1,28 @@
+# Editable rule settings for the UKP SAC Investigator.
+# Change values here instead of editing code. Every rule that fires is recorded in fact_checks.
+
+reconciliation:
+  # Billing systems whose accounts are never on a OneBill
+  mobile_billing_systems: [EE-CSS, DISE, EE-EXCALIBUR]
+  # Bills known to be shared across many customers (also auto-detected, see below)
+  known_bulk_bills: []
+  # Auto-detect a shared bill: more than this many accounts on it ...
+  bulk_min_accounts: 50
+  # ... and less than this share of them found in the SAC report
+  bulk_max_match_share: 0.20
+  # A bill line covering more than this many rental days is flagged as multi-month
+  multi_month_rental_days: 35
+
+deepdive:
+  # Product label used throughout (column in the WD4 / 24-month data)
+  product_column: L3
+  # A one-off swing is flagged when |period value| > this multiple of the median monthly value
+  one_off_multiple: 3.0
+  # Revenue is "stopped" when the last 3 periods average below this share of the first 3
+  stop_share: 0.15
+  # Circuit cost vs UKP cost tolerance (GBP) before flagging an unexplained gap
+  circuit_tolerance_gbp: 25
+  # Ignore product-level revenue/cost below this (GBP YTD) when raising findings
+  materiality_gbp: 100
+  # SAC used for unidentified circuits
+  unidentified_sac: ZZZ01
