@@ -27,6 +27,7 @@ async function inspectZip(file:File){
  if(cursor!==bytes.byteLength)throw Error('Invalid ZIP directory length.');
 }
 export async function importFiles(files:File[],existing:InputFile[],signal?:AbortSignal){
+ const excluded:{path:string;reason:string;size:number;file?:File}[]=[];
  const result=[...existing];let expanded=existing.reduce((n,f)=>n+f.file.size,0),count=existing.length,ignored=0;
  function accept(path:string,bytes:Uint8Array|File){
   if(++count>COUNT)throw Error('Maximum 500 files per session.');
@@ -34,8 +35,8 @@ export async function importFiles(files:File[],existing:InputFile[],signal?:Abor
   if(expanded>LIMIT)throw Error('Maximum expanded selection size is 1 GB.');
   const f=bytes instanceof File?bytes:new File([bytes as BlobPart],path.split('/').pop());
   if(f.size>SINGLE)throw Error('Maximum individual file size is 500 MB.');
-  const item=classify(f,path);if(!item){ignored++;return;}
-  if(result.some(r=>r.path===path))throw Error(`Duplicate path: ${path}. Clear the session or select a different input.`);
+  const item=classify(f,path);if(!item){ignored++;excluded.push({path,size:f.size,reason:nameReason(path),file:/\.(csv|xlsx|xlsb)$/i.test(path)?f:undefined});return;}
+  if(result.some(r=>r.path===path)){excluded.push({path,size:f.size,reason:'Duplicate path; original retained'});return;}
   result.push(item);
  }
  for(const f of files){
@@ -65,5 +66,7 @@ export async function importFiles(files:File[],existing:InputFile[],signal?:Abor
   for(let offset=0;offset<f.size;offset+=65536){signal?.throwIfAborted();if(failure)throw failure;unzip.push(new Uint8Array(await f.slice(offset,offset+65536).arrayBuffer()),offset+65536>=f.size);}
   if(failure)throw failure;if(!entries||unfinished)throw Error('ZIP contains no readable entries or is truncated.');
  }
- return {files:result,ignored};
+ return {files:result,ignored,excluded};
 }
+
+function nameReason(path:string){if(path.split('/').pop()?.startsWith('~$'))return 'Temporary Excel file';if(/\.(csv|xlsx|xlsb)$/i.test(path))return 'Filename does not identify a supported UKP input; available for inspection';return 'Unsupported file type';}
