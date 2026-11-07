@@ -12,3 +12,6 @@ powerbi/publish_in_browser.js
 browser/test-results/
 browser/playwright-report/
 browser/site.zip
+
+private-rules.json
+private-history.bundle

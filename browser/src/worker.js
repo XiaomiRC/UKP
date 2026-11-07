@@ -8,6 +8,7 @@ self.onmessage=async({data})=>{
   await py.loadPackage(['pandas','pyyaml']);
   const engine=await fetch(new URL('engine.zip',base),{cache:'no-cache'});if(!engine.ok)throw Error('Analysis engine is unavailable. Rebuild application assets.');
   py.unpackArchive(new Uint8Array(await engine.arrayBuffer()),'zip',{extractDir:'/app'});
+  if(data.privateRules?.length){const path='/app/config/rules.yaml';const original=new TextDecoder().decode(py.FS.readFile(path));py.FS.writeFile(path,new TextEncoder().encode(original.replace('known_bulk_bills: []','known_bulk_bills: '+JSON.stringify(data.privateRules))));}
   for(const dir of ['sac','bills','period','outputs','dataset'])py.FS.mkdirTree('/work/'+dir);
   for(const file of data.files){const name=file.name;if(name.includes('/')||name.includes('\\'))throw Error('Invalid input filename');py.FS.writeFile('/work/'+file.category+'/'+name,new Uint8Array(file.bytes));}
   py.globals.set('browser_mode',data.mode);py.globals.set('browser_sacs',data.sacs.join(' '));py.globals.set('browser_date',data.date);py.globals.set('browser_audit',JSON.stringify(data.audit||[]));
