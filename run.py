@@ -84,12 +84,20 @@ def main(argv=None):
     p.add_argument('--period', default=os.path.join(ROOT, 'inputs', 'P06'), help='folder with the period .xlsb set')
     p.add_argument('--out', default=os.path.join(ROOT, 'outputs'))
     p.add_argument('--dataset', default=os.path.join(ROOT, 'dataset'))
+    p.add_argument('--private-rules', help='Local JSON shared-bill exceptions')
     p.add_argument('--config', default=os.path.join(ROOT, 'config', 'rules.yaml'))
     modes = p.add_mutually_exclusive_group()
     modes.add_argument('--recon-only', action='store_true')
     modes.add_argument('--deepdive-only', action='store_true')
     a = p.parse_args(argv)
     cfg = yaml.safe_load(open(a.config, encoding='utf-8'))
+    if a.private_rules:
+        import json
+        private = json.load(open(a.private_rules, encoding='utf-8'))
+        values = private.get('known_bulk_bills')
+        if not isinstance(values, list) or not all(isinstance(v, str) and re.fullmatch(r'VP[0-9]{8}', v) for v in values):
+            raise ValueError('Invalid private shared-bill rules')
+        cfg['reconciliation']['known_bulk_bills'] = values
     sacs = [s.upper() for s in a.sac]
     if a.all:
         sacs += sorted({os.path.basename(f).upper().split('_')[0].rstrip('-')
