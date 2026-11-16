@@ -62,7 +62,7 @@ def build(dataset,output):
             names=[c for c in priority if c in d]+[c for c,_ in cols if c not in priority]
             fields=[('col',c) for c in names]
             visuals=[b.visual(table+'table','tableEx',240,380,1030,330,labels[table],table,{'Values':fields})]
-            if 'SAC' in d:visuals.append(b.visual(table+'slicer','slicer',0,0,220,140,'SAC',table,{'Values':[('col','SAC')]}))
+            if 'SAC' in d:visuals.append(b.visual(table+'slicer','slicer',0,0,220,140,'SAC','dim_sac',{'Values':[('col','SAC')]}))
             category=next((c for c in ['Status','Severity','Result','Period','SAC'] if c in d),None)
             if category:
                 visuals.append(b.visual(table+'chart','clusteredBarChart',240,160,1030,200,'Records by '+category,table,{'Category':[('col',category)],'Y':[('measure',measure)]}))
@@ -74,9 +74,9 @@ def build(dataset,output):
             if portfolio:
                 visuals=[v for v in visuals if json.loads(v['config'])['name']!=table+'chart']
                 for i,(field,name) in enumerate(portfolio):
-                    visuals.append(b.visual(table+'kpi'+str(i),'card',240+i*340,0,330,110,field+' (GBP)',table,{'Values':[('measure',name)]}))
+                    visuals.append(b.visual(table+'kpi'+str(i),'card',240+i*340,60,330,110,field+' (GBP)',table,{'Values':[('measure',name)]}))
                 field,name=portfolio[-1]
-                visuals.append(b.visual(table+'portfolio','clusteredBarChart',240,120,1030,170,field+' by SAC (GBP)',table,{'Category':[('col','SAC')],'Y':[('measure',name)]}))
+                visuals.append(b.visual(table+'portfolio','clusteredBarChart',240,180,1030,180,field+' by SAC (GBP)',table,{'Category':[('col','SAC')],'Y':[('measure',name)]}))
             if table=='fact_pnl':
                 for idx,metric in enumerate(['Revenue','Cost','Margin']):
                     visuals.append(b.visual('financeKpi'+metric,'card',240+idx*345,60,330,90,metric+' · selected years (£)',table,{'Values':[('measure','Total '+metric)]}))

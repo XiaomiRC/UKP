@@ -11,9 +11,9 @@ self.onmessage=async({data})=>{
   if(data.privateRules?.length){const path='/app/config/rules.yaml';const original=new TextDecoder().decode(py.FS.readFile(path));py.FS.writeFile(path,new TextEncoder().encode(original.replace('known_bulk_bills: []','known_bulk_bills: '+JSON.stringify(data.privateRules))));}
   for(const dir of ['sac','bills','period','outputs','dataset'])py.FS.mkdirTree('/work/'+dir);
   for(const file of data.files){const name=file.name;if(name.includes('/')||name.includes('\\'))throw Error('Invalid input filename');py.FS.writeFile('/work/'+file.category+'/'+name,new Uint8Array(file.bytes));}
-  py.globals.set('browser_mode',data.mode);py.globals.set('browser_sacs',data.sacs.join(' '));py.globals.set('browser_date',data.date);py.globals.set('browser_audit',JSON.stringify(data.audit||[]));
+  py.globals.set('mapping_original',data.mappingName||'');py.globals.set('browser_mode',data.mode);py.globals.set('browser_sacs',data.sacs.join(' '));py.globals.set('browser_date',data.date);py.globals.set('browser_audit',JSON.stringify(data.audit||[]));
   if(data.mode!=='recon'){
-   if(data.mappingName&&!/Circuit - Customer - SAC mapping/i.test(data.mappingName))py.FS.rename('/work/period/'+data.mappingName,'/work/period/Circuit - Customer - SAC mapping.xlsb');
+   if(data.mappingName&&data.mappingName!=='Circuit - Customer - SAC mapping.xlsb')py.FS.rename('/work/period/'+data.mappingName,'/work/period/Circuit - Customer - SAC mapping.xlsb');
    await py.runPythonAsync(`
 import sys,glob
 sys.path.insert(0,'/app')
@@ -75,7 +75,7 @@ usage=[]
 for category in ['sac','bills','period']:
  for name in os.listdir('/work/'+category):
   path='/work/'+category+'/'+name
-  usage.append({'file':name,'status':'Used' if path in used else 'Skipped','reason':'Read by investigation' if path in used else 'Not referenced by selected investigation'})
+  usage.append({'file':mapping_original if mapping_original and name=='Circuit - Customer - SAC mapping.xlsb' else name,'status':'Used' if path in used else 'Skipped','reason':'Read by investigation' if path in used else 'Not referenced by selected investigation'})
 import csv
 audit=json.loads(browser_audit)
 manifest=[]

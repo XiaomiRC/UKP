@@ -6,6 +6,7 @@ Large .xlsb sheets are parsed once with pyxlsb and cached as parquet under .cach
 from __future__ import annotations
 
 import glob
+import fnmatch
 import hashlib
 import os
 import re
@@ -110,9 +111,9 @@ class PeriodFiles:
             'btb': '*BTB Trade Collapse*.xlsb',
         }
         for k, p in pats.items():
-            hits = sorted(glob.glob(os.path.join(folder, p)))
+            hits = sorted(os.path.join(folder, n) for n in os.listdir(folder) if fnmatch.fnmatch(n.lower(), p.lower()))
             if k == 'products':
-                hits = [h for h in hits if 'Voice' not in os.path.basename(h)]
+                hits = [h for h in hits if 'voice' not in os.path.basename(h).lower()]
             if hits:
                 pf.files[k] = hits[0]
         m = re.search(r'P(\d{2})[-_]2026', ' '.join(os.path.basename(v) for v in pf.files.values()))
@@ -305,15 +306,20 @@ def load_bill(path: str) -> BillFile:
     d = d[~is_total].copy()
     money = [c for c in d.columns if '(£)' in c]
     for c in money:
-        d[c] = pd.to_numeric(d[c].fillna('').str.replace(',', ''), errors='coerce').fillna(0.0)
+        raw = d[c].fillna('').str.strip().str.replace(',', '', regex=False)
+        parsed = pd.to_numeric(raw, errors='coerce')
+        invalid = raw.ne('') & parsed.isna()
+        if invalid.any():
+            raise ValueError(f'{base}: invalid monetary values in {c}, CSV rows: ' + ', '.join(str(i+2) for i in d.index[invalid][:10]))
+        d[c] = parsed.fillna(0.0)
     d['svc'] = d['Service number'].fillna('').str.replace("'", '').str.strip().str.upper()
     d['svc_base'] = d['svc'].str.split('/').str[0]
     d['src'] = d['Source account'].fillna('').str.strip().str.upper()
     d['OneBill'] = d['Account'].fillna('').str.strip()
     d['stype'] = d['Service type'].fillna('').str.strip()
     d['acctkey'] = np.where(d['src'] != '', d['src'], d['svc'])
-    d['rent_start'] = pd.to_datetime(d.get('Rental start date', '').str.strip(), errors='coerce', dayfirst=True)
-    d['rent_end'] = pd.to_datetime(d.get('Rental end date', '').str.strip(), errors='coerce', dayfirst=True)
+    d['rent_start'] = pd.to_datetime(d.get('Rental start date', pd.Series('', index=d.index)).str.strip(), errors='coerce', dayfirst=True)
+    d['rent_end'] = pd.to_datetime(d.get('Rental end date', pd.Series('', index=d.index)).str.strip(), errors='coerce', dayfirst=True)
     d['rent_days'] = pd.to_numeric(d.get('Rental days'), errors='coerce')
     d['file'] = base
     rows_vp = d['OneBill'].replace('', np.nan).dropna()
