@@ -12,6 +12,21 @@ self.onmessage=async({data})=>{
   for(const dir of ['sac','bills','period','outputs','dataset'])py.FS.mkdirTree('/work/'+dir);
   for(const file of data.files){const name=file.name;if(name.includes('/')||name.includes('\\'))throw Error('Invalid input filename');py.FS.writeFile('/work/'+file.category+'/'+name,new Uint8Array(file.bytes));}
   py.globals.set('browser_mode',data.mode);py.globals.set('browser_sacs',data.sacs.join(' '));py.globals.set('browser_date',data.date);py.globals.set('browser_audit',JSON.stringify(data.audit||[]));
+  if(data.mode!=='recon'){
+   if(data.mappingName&&!/Circuit - Customer - SAC mapping/i.test(data.mappingName))py.FS.rename('/work/period/'+data.mappingName,'/work/period/Circuit - Customer - SAC mapping.xlsb');
+   await py.runPythonAsync(`
+import sys,glob
+sys.path.insert(0,'/app')
+from ukp.loaders import read_xlsb
+paths=glob.glob('/work/period/*Circuit - Customer - SAC mapping*.xlsb')
+if len(paths)!=1: raise ValueError('Choose exactly one mapping workbook. Selected files are retained.')
+for sheet,required in [('Customer2SAC Mapping',{'SAC','Customer Name'}),('OR_Circuit_ID2SAC Mapping',{'SAC','OR Circuit ID'})]:
+ try: frame=read_xlsb(paths[0],sheet)
+ except Exception as exc: raise ValueError('Invalid mapping workbook: required sheet '+sheet+' could not be read. Add the mapping workbook, not the MB Control File.') from exc
+ missing=required-set(str(c).strip() for c in frame.columns)
+ if missing: raise ValueError('Invalid mapping workbook: '+sheet+' is missing columns: '+', '.join(sorted(missing)))
+`);
+  }
   postMessage({status:'Running investigation locally. Large period workbooks can take several minutes.'});
   const summary=await py.runPythonAsync(`
 import os, sys, json, warnings

@@ -63,3 +63,6 @@ Completed investigations now prepare an interactive dashboard and a self-contain
 Download UKP-PowerBI.zip, extract it, and open powerbi/UKP.pbip in Power BI Desktop. The results ZIP also includes this project. The Power Query tables embed this run's data; refreshing does not fetch new source files. Rerun the website for updated results. No folder parameter or server is required. Power BI Desktop opening/rendering is not verified in this Linux environment.
 
 If project generation fails, the dashboard and investigation downloads remain available. Retry Power BI export regenerates the project from the existing snapshot without repeating the investigation. Downloads contain business data and should be handled accordingly.
+
+### Missing mapping workbook
+Deep dive requires the reporting-period Circuit–Customer–SAC mapping XLSB, with `Customer2SAC Mapping` (SAC, Customer Name) and `OR_Circuit_ID2SAC Mapping` (SAC, OR Circuit ID). The MB Control File is not a replacement. Add the missing file without removing your ZIP selection. Use the mapping assignment selector for a different filename; the engine validates sheets and columns before analysis. Reconciliation-only does not require mapping, but still needs SAC reports and bill inputs. Other-period files are shown separately and not silently reused.
