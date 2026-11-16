@@ -24,7 +24,7 @@ VP_RE = re.compile(r'VP\d{8}')
 # --------------------------------------------------------------------------- xlsb + cache
 def _cache_path(path: str, sheet: str) -> str:
     st = os.stat(path)
-    key = f'{os.path.realpath(path)}|{sheet}|{st.st_size}|{st.st_mtime_ns}'
+    key = f'header-v2|{os.path.realpath(path)}|{sheet}|{st.st_size}|{st.st_mtime_ns}'
     return os.path.join(CACHE, hashlib.md5(key.encode()).hexdigest() + '.parquet')
 
 
@@ -47,7 +47,14 @@ def read_xlsb(path: str, sheet: str) -> pd.DataFrame:
     with open_workbook(path) as wb:
         with wb.get_sheet(sheet) as sh:
             it = sh.rows(sparse=False)
-            header = [c.v for c in next(it)]
+            header = None
+            for candidate in it:
+                values = [c.v for c in candidate]
+                if any(v is not None and str(v).strip() for v in values):
+                    header = values
+                    break
+            if header is None:
+                raise ValueError(f'{os.path.basename(path)} / {sheet}: sheet is empty; expected a header row and data')
             n = len(header)
             while n and header[n - 1] is None:
                 n -= 1
@@ -127,6 +134,10 @@ class PeriodFiles:
     # ---- sheets
     def wd4(self) -> pd.DataFrame:
         d = read_xlsb(self.files['wd4'], 'Data')
+        required = {'SAC','Revenue','Margin','Cost','Period','Entity','Type','L3'}
+        missing = required-set(d.columns)
+        if missing:
+            raise ValueError(f'{self.name("wd4")} / Data: missing required columns: '+', '.join(sorted(missing))+'. Supply the SAP WD4 workbook with its column headers; leading blank rows are supported.')
         d['SAC'] = norm_sac(d['SAC'])
         for c in ('Revenue', 'Margin', 'Cost'):
             d[c] = pd.to_numeric(d[c], errors='coerce').fillna(0.0)
