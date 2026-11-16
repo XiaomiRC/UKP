@@ -1,11 +1,11 @@
+import {report,bills} from './fixtures';
 import {test,expect} from '@playwright/test';
 import fs from 'node:fs';import path from 'node:path';import {zipSync,unzipSync} from 'fflate';
 const root=path.resolve(import.meta.dirname,'../..');
 test('real reconciliation produces local downloads without upload requests',async({page})=>{
  const network:any[]=[];page.on('request',r=>network.push({url:r.url(),method:r.method()}));
  await page.goto('./');
- const reports=fs.readdirSync(path.join(root,'inputs/sac_reports')).filter(n=>n.startsWith('TEST01_')).map(n=>path.join(root,'inputs/sac_reports',n));
- const bills=fs.readdirSync(path.join(root,'inputs/bills')).filter(n=>n.endsWith('.csv')).map(n=>path.join(root,'inputs/bills',n));
+ const reports=[report];
  await page.locator('input[type=file]').nth(0).setInputFiles([...reports,...bills]);
  await page.getByLabel('Activity').selectOption('recon');await page.getByRole('button',{name:'Select all',exact:true}).click();
  await page.getByRole('button',{name:/Run 1 selected SAC/}).click();

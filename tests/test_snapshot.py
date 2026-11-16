@@ -23,3 +23,12 @@ def test_empty_financial_results_keep_project_valid(tmp_path):
     text=(out/'UKP.SemanticModel/definition/tables/fact_pnl.tmdl').read_text()
     assert 'dataType: double' in text
     assert 'Snapshot margin' not in text
+
+def test_overview_heading_does_not_overlap_kpis(tmp_path):
+ data=tmp_path/'data';data.mkdir()
+ pd.DataFrame([{'SAC':'TEST01','FY26 YTD Revenue':10,'FY26 YTD Margin':2}]).to_csv(data/'dim_sac.csv',index=False)
+ out=tmp_path/'project';build(str(data),str(out))
+ visuals=[json.loads(p.read_text()) for p in out.rglob('visual.json')]
+ h=next(v['position'] for v in visuals if v['name']=='dim_sacheading')
+ for v in visuals:
+  if 'kpi' in v['name']:assert v['position']['y']>=h['y']+h['height']

@@ -23,7 +23,7 @@ for name in ['pandas','pyyaml']:fetch(name)
 with zipfile.ZipFile(PUBLIC/'engine.zip','w',zipfile.ZIP_DEFLATED) as archive:
  for folder in ['ukp','config']:
   for path in (ROOT/folder).rglob('*'):
-   if path.is_file() and path.suffix in ['.py','.yaml']:archive.write(path,path.relative_to(ROOT))
+   if path.is_file() and path.suffix in ['.py','.yaml','.json']:archive.write(path,path.relative_to(ROOT))
  for name in ['powerbi/__init__.py','powerbi/snapshot.py','powerbi/build_pbip.py','powerbi/to_pbir.py']:
   archive.write(ROOT/name,name)
  for path in (ROOT/'powerbi/pbir_base').rglob('*.json'):

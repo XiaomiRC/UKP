@@ -42,12 +42,13 @@ def build(dataset,output):
             for field,name in portfolio:lines += [f'\tmeasure {b.q(name)} = CALCULATE(SUM(fact_pnl[{"Revenue" if "Revenue" in field else "Margin"}]), fact_pnl[FY] = "FY26")' if 'fact_pnl.csv' in os.listdir(dataset) else f'\tmeasure {b.q(name)} = SUM(dim_sac[{field}])','\t\tformatString: #,##0.00','']
         if table=='fact_pnl':
             for metric in ['Revenue','Cost','Margin']:
-                lines += [f"\tmeasure {b.q('Total '+metric)} = SUM(fact_pnl[{metric}])", '\t\tformatString: £#,##0.00;(£#,##0.00)', '']
+                lines += [f"\tmeasure {b.q('Total '+metric)} = VAR SelectedYear = SELECTEDVALUE(fact_pnl[FY], CALCULATE(MAX(fact_pnl[FY]), REMOVEFILTERS(fact_pnl[FY]))) RETURN CALCULATE(SUM(fact_pnl[{metric}]), KEEPFILTERS(fact_pnl[FY] = SelectedYear))", '\t\tformatString: £#,##0.00;(£#,##0.00)', '']
             lines += ["\tmeasure 'Margin %' = DIVIDE([Total Margin], [Total Revenue])", '\t\tformatString: 0.0%', '']
             if len(d):
                 latest=max(d['FY'])
+                coverage_filters=''.join(', REMOVEFILTERS(fact_pnl['+field+'])' for field in ['Product','Entity','Type'] if field in d)
                 for metric in ['Revenue','Cost','Margin']:
-                    expr=f"SUMX(VALUES(dim_sac[SAC]), VAR AvailablePeriods = CALCULATETABLE(VALUES(fact_pnl[Period]), REMOVEFILTERS(fact_pnl[FY]), fact_pnl[FY] = \"{latest}\") RETURN CALCULATE([Total {metric}], KEEPFILTERS(TREATAS(AvailablePeriods, fact_pnl[Period]))))"
+                    expr=f"SUMX(VALUES(dim_sac[SAC]), VAR AvailablePeriods = CALCULATETABLE(VALUES(fact_pnl[Period]), REMOVEFILTERS(fact_pnl[FY]){coverage_filters}, fact_pnl[FY] = \"{latest}\") RETURN CALCULATE([Total {metric}], KEEPFILTERS(TREATAS(AvailablePeriods, fact_pnl[Period]))))"
                     lines += [f"\tmeasure {b.q('Comparable '+metric)} = {expr}", '\t\tformatString: £#,##0.00;(£#,##0.00)', '']
                 lines += ["\tmeasure 'Snapshot margin' = [Comparable Margin]", '\t\tformatString: £#,##0.00;(£#,##0.00)', ''] if not any("measure 'Snapshot margin'" in v for v in lines) else []
         if table=='fact_recon_account':
@@ -79,7 +80,7 @@ def build(dataset,output):
                 visuals.append(b.visual(table+'portfolio','clusteredBarChart',240,180,1030,180,field+' by SAC (GBP)',table,{'Category':[('col','SAC')],'Y':[('measure',name)]}))
             if table=='fact_pnl':
                 for idx,metric in enumerate(['Revenue','Cost','Margin']):
-                    visuals.append(b.visual('financeKpi'+metric,'card',240+idx*345,60,330,90,metric+' · selected years (£)',table,{'Values':[('measure','Total '+metric)]}))
+                    visuals.append(b.visual('financeKpi'+metric,'card',240+idx*345,60,330,90,metric+' · selected/latest year (£)',table,{'Values':[('measure','Total '+metric)]}))
             visuals.append(b.textbox(table+'heading',240,0,1030,50,labels[table]+' | UKP investigation snapshot'))
             visuals.append(b.textbox(table+'footnote',240,715,1030,40,'Embedded snapshot · Refresh does not fetch new files. Finding impacts may overlap.'))
             sections.append({'name':'Page'+str(len(sections)+1),'displayName':labels[table],'width':1280,'height':760,'visualContainers':visuals})

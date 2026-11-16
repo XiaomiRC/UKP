@@ -66,3 +66,10 @@ If project generation fails, the dashboard and investigation downloads remain av
 
 ### Missing mapping workbook
 Deep dive requires the reporting-period Circuit–Customer–SAC mapping XLSB, with `Customer2SAC Mapping` (SAC, Customer Name) and `OR_Circuit_ID2SAC Mapping` (SAC, OR Circuit ID). The MB Control File is not a replacement. Add the missing file without removing your ZIP selection. Use the mapping assignment selector for a different filename; the engine validates sheets and columns before analysis. Reconciliation-only does not require mapping, but still needs SAC reports and bill inputs. Other-period files are shown separately and not silently reused.
+
+### Reliability and regression checks
+Input roles are defined once in `config/input_roles.json`. The browser resolves exact original filenames and passes those assignments to the Python engine; custom mapping files retain their names in evidence. One workbook cannot satisfy multiple roles. CLI callers may supply `--period-files` as a JSON object of role-to-filename assignments.
+
+Malformed nonblank monetary values stop processing with CSV row references. Blank amounts retain zero treatment and generate warnings; unavailable rental dates generate a coverage warning. Private-rule and preview reads are cancelled logically when the session is cleared.
+
+Browser regression fixtures are generated synthetic workbooks and bills; no customer inputs are required. Run `UKP_CHROMIUM=/usr/bin/chromium npm --prefix browser run test:browser`. Power BI Desktop refresh and rendering still require validation on Windows.

@@ -1,0 +1,31 @@
+{
+  "mapping": {
+    "match": "Circuit - Customer - SAC mapping",
+    "required": true
+  },
+  "voice": {
+    "match": "Voice Products Data Extract",
+    "required": true
+  },
+  "products": {
+    "match": "Products Data Extract",
+    "exclude": "Voice Products Data Extract",
+    "required": true
+  },
+  "wd4": {
+    "match": "For SAP WD4",
+    "required": true
+  },
+  "m24": {
+    "match": "24 Month"
+  },
+  "outlook": {
+    "match": "PL Outlook"
+  },
+  "revenue": {
+    "match": "Products Revenue Report"
+  },
+  "btb": {
+    "match": "BTB Trade Collapse"
+  }
+}

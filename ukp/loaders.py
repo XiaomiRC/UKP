@@ -98,24 +98,25 @@ class PeriodFiles:
     files: dict = field(default_factory=dict)
 
     @classmethod
-    def discover(cls, folder: str) -> 'PeriodFiles':
+    def discover(cls, folder: str, assignments=None) -> 'PeriodFiles':
         pf = cls(folder)
-        pats = {
-            'mapping': '*Circuit - Customer - SAC mapping*.xlsb',
-            'products': '*Products Data Extract*.xlsb',
-            'voice': '*Voice Products Data Extract*.xlsb',
-            'wd4': '*For SAP WD4*.xlsb',
-            'm24': '*24 Month*.xlsb',
-            'revenue': '*Products Revenue Report*.xlsb',
-            'outlook': '*PL Outlook*.xlsb',
-            'btb': '*BTB Trade Collapse*.xlsb',
-        }
-        for k, p in pats.items():
-            hits = sorted(os.path.join(folder, n) for n in os.listdir(folder) if fnmatch.fnmatch(n.lower(), p.lower()))
-            if k == 'products':
-                hits = [h for h in hits if 'voice' not in os.path.basename(h).lower()]
-            if hits:
-                pf.files[k] = hits[0]
+        import json
+        definitions = json.load(open(os.path.join(ROOT, 'config', 'input_roles.json'), encoding='utf-8'))
+        for role, rule in definitions.items():
+            hits = sorted(os.path.join(folder, name) for name in os.listdir(folder)
+                          if name.lower().endswith('.xlsb') and rule['match'].lower() in name.lower()
+                          and (not rule.get('exclude') or rule['exclude'].lower() not in name.lower()))
+            if assignments and role in assignments:
+                name = assignments[role]
+                if not isinstance(name, str) or os.path.basename(name) != name or not name.lower().endswith('.xlsb'):
+                    raise ValueError('Invalid assigned workbook for '+role)
+                path = os.path.join(folder, name)
+                if not os.path.isfile(path): raise ValueError('Assigned workbook missing for '+role)
+                hits = [path]
+            if len(hits)>1: raise ValueError('Multiple '+role+' workbooks; remove duplicates or assign one explicitly')
+            if hits: pf.files[role]=hits[0]
+        if len(set(pf.files.values())) != len(pf.files):
+            raise ValueError('One workbook cannot fill multiple roles')
         m = re.search(r'P(\d{2})[-_]2026', ' '.join(os.path.basename(v) for v in pf.files.values()))
         pf.period = f'P{m.group(1)}' if m else ''
         return pf
@@ -299,8 +300,14 @@ def load_bill(path: str) -> BillFile:
         return BillFile(path, file_vp, '', bill_date, pd.DataFrame(), None)
     d = pd.read_csv(path, encoding='latin1', dtype=str)
     d.columns = [c.strip().replace('\xa3', '£').replace('�', '£') for c in d.columns]
-    tot_col = [c for c in d.columns if c.startswith('Total charges before VAT')][0]
+    required = {'Service number','Source account','Account','Service type'}
+    missing = required-set(d.columns)
+    totals = [c for c in d.columns if c.startswith('Total charges before VAT')]
+    if missing or len(totals)!=1:
+        raise ValueError(f'{base}: missing required CSV columns: '+', '.join(sorted(missing)) + ('; exactly one Total charges before VAT column is required' if len(totals)!=1 else ''))
+    tot_col = totals[0]
     d = d.rename(columns={tot_col: BILL_TOTAL})
+    blank_charges = int(d[BILL_TOTAL].fillna('').str.strip().eq('').sum())
     is_total = d['Service number'].fillna('').str.strip().str.lower() == 'total'
     total_row = pd.to_numeric(d.loc[is_total, BILL_TOTAL].str.replace(',', ''), errors='coerce').sum() if is_total.any() else None
     d = d[~is_total].copy()
@@ -308,7 +315,7 @@ def load_bill(path: str) -> BillFile:
     for c in money:
         raw = d[c].fillna('').str.strip().str.replace(',', '', regex=False)
         parsed = pd.to_numeric(raw, errors='coerce')
-        invalid = raw.ne('') & parsed.isna()
+        invalid = raw.ne('') & (parsed.isna() | ~np.isfinite(parsed))
         if invalid.any():
             raise ValueError(f'{base}: invalid monetary values in {c}, CSV rows: ' + ', '.join(str(i+2) for i in d.index[invalid][:10]))
         d[c] = parsed.fillna(0.0)
@@ -322,6 +329,7 @@ def load_bill(path: str) -> BillFile:
     d['rent_end'] = pd.to_datetime(d.get('Rental end date', pd.Series('', index=d.index)).str.strip(), errors='coerce', dayfirst=True)
     d['rent_days'] = pd.to_numeric(d.get('Rental days'), errors='coerce')
     d['file'] = base
+    d.attrs['blank_charge_count'] = blank_charges
     rows_vp = d['OneBill'].replace('', np.nan).dropna()
     rows_vp = rows_vp.mode().iloc[0] if len(rows_vp) else ''
     return BillFile(path, file_vp, rows_vp, bill_date, d, total_row)

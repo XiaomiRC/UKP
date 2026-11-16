@@ -85,6 +85,7 @@ def main(argv=None):
     p.add_argument('--period', default=os.path.join(ROOT, 'inputs', 'P06'), help='folder with the period .xlsb set')
     p.add_argument('--out', default=os.path.join(ROOT, 'outputs'))
     p.add_argument('--dataset', default=os.path.join(ROOT, 'dataset'))
+    p.add_argument('--period-files', help='JSON role-to-filename assignments')
     p.add_argument('--private-rules', help='Local JSON shared-bill exceptions')
     p.add_argument('--config', default=os.path.join(ROOT, 'config', 'rules.yaml'))
     modes = p.add_mutually_exclusive_group()
@@ -107,8 +108,10 @@ def main(argv=None):
         p.error('give --sac CODE or --all')
     pf = None
     if not a.recon_only:
-        pf = PeriodFiles.discover(a.period)
-        missing = [k for k in ('wd4', 'mapping', 'products', 'voice') if k not in pf.files]
+        import json
+        pf = PeriodFiles.discover(a.period, json.loads(a.period_files) if a.period_files else None)
+        definitions = json.load(open(os.path.join(ROOT, 'config', 'input_roles.json'), encoding='utf-8'))
+        missing = [k for k, rule in definitions.items() if rule.get('required') and k not in pf.files]
         if missing:
             p.error(f'period folder missing required inputs: {", ".join(missing)}')
         else:

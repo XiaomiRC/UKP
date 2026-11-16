@@ -76,6 +76,10 @@ def prepare_bills(rep: SacReport, bills: list[BillFile], cfg: dict):
             issues.append((base, vp, 'Different bill date', f'Bill dated {b.bill_date}; the others are {main_date}.',
                            'Fine for presence checks; amounts are from a different month.'))
             issue_txt.append(f'Dated {b.bill_date}')
+        blanks = b.df.attrs.get('blank_charge_count', 0)
+        if blanks: chk(f'{base}: blank charge amounts', 'WARN', int(blanks), 'Blank charge cells treated as zero; review source data')
+        if b.df['rent_start'].isna().all() or b.df['rent_end'].isna().all():
+            chk(f'{base}: rental date coverage', 'WARN', '', 'Rental dates unavailable; rental duration checks may be incomplete')
         lines_total = float(b.df[BILL_TOTAL].sum())
         if b.total_row is not None:
             ok = abs(lines_total - b.total_row) < 0.05
